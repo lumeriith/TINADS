@@ -1,0 +1,1 @@
+"C:\Program Files\Virtual Desktop Streamer\VirtualDesktop.Streamer.exe" "C:\Program Files\Unity\Hub\Editor\2021.3.13f1\Editor\Unity.exe" -projectpath "C:\Users\lumer\Documents\GitHub\TINADS\TINADS-App" useHub -hubIPC -cloudEnvironment production
