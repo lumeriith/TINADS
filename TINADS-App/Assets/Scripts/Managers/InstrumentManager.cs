@@ -15,6 +15,9 @@ public struct HitInfo
 {
     public InstrumentType instrument;
     public Vector3 velocity;
+    /// <summary>
+    /// Scalar velocity between 0 and 1.
+    /// </summary>
     public float normalizedVelocity;
 }
 
