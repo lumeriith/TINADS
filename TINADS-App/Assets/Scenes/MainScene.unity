@@ -3053,9 +3053,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpeed: 1.5
   rotationSpeed: 120
+  scaleSpeed: 0.35
+  scaleClampRange: {x: 0.5, y: 1.2}
   invertMovementVertical: 1
   invertMovementHorizontal: 0
   invertRotation: 0
+  invertScaling: 1
 --- !u!4 &3318589463243625043
 Transform:
   m_ObjectHideFlags: 0
