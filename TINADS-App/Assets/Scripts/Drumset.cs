@@ -17,8 +17,10 @@ public class Drumset : MonoBehaviour
     private void Start()
     {
         _mainCamera = Camera.main;
-        transform.SetPositionAndRotation(PreferencesManager.instance.drumSetPosition,
-            PreferencesManager.instance.drumSetRotation);
+        transform.SetPositionAndRotation(
+            PreferencesManager.instance.drumSetPosition,
+            PreferencesManager.instance.drumSetRotation
+            );
     }
 
     private void Update()
