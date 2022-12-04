@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class Instrument : MonoBehaviour
 {
-    public InstrumentType type;
+    public eInstrumentType type;
 }
