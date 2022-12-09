@@ -6,27 +6,40 @@ using UnityEngine;
 public class DrumstickMovement : MonoBehaviour
 {
     public Transform targetTransform;
+    public Rigidbody viewModelBody;
     public Vector3 rotationOffset;
     
-    public float posSmoothTime = 0.1f;
-    public float rotSmoothTime = 0.1f;
+    public float posSmooth = 0.015f;
+    public float rotSmooth = 0.03f;
 
-    private Rigidbody _rb;
-    private Vector3 _posVelocity;
-    private Quaternion _rotVelocity;
+    public float viewModelPosSmooth = 0.015f;
+    public float viewModelRotSmooth = 0.03f;
+    
+    private Vector3 _viewPosCv;
+    private Quaternion _viewRotCv;    
 
-    private void Awake()
-    {
-        _rb = GetComponent<Rigidbody>();
-    }
+    private Vector3 _posCv;
+    private Quaternion _rotCv;
 
     private void FixedUpdate()
     {
         var targetPos = targetTransform.position;
         var targetRot = targetTransform.rotation * Quaternion.Euler(rotationOffset);
-        _rb.MovePosition(Vector3.SmoothDamp(_rb.position, targetPos, ref _posVelocity, posSmoothTime, 1000f, Time.fixedDeltaTime));
-        _rb.MoveRotation(QuaternionUtil.SmoothDamp(_rb.rotation, targetRot, ref _rotVelocity, rotSmoothTime, Time.fixedDeltaTime));
-        _rb.velocity = Vector3.zero;
-        _rb.angularVelocity = Vector3.zero;
+    
+        viewModelBody.MovePosition(Vector3.SmoothDamp(viewModelBody.position, targetPos, ref _viewPosCv, viewModelPosSmooth, 1000f, Time.fixedDeltaTime));
+        viewModelBody.MoveRotation(QuaternionUtil.SmoothDamp(viewModelBody.rotation, targetRot, ref _viewRotCv, viewModelRotSmooth, Time.fixedDeltaTime));
+        viewModelBody.velocity = Vector3.zero;
+        viewModelBody.angularVelocity = Vector3.zero;
+    }
+
+    private void Update()
+    {
+        var targetPos = targetTransform.position;
+        var targetRot = targetTransform.rotation * Quaternion.Euler(rotationOffset);
+        
+        transform.SetPositionAndRotation(
+            Vector3.SmoothDamp(transform.position, targetPos, ref _posCv, posSmooth), 
+            QuaternionUtil.SmoothDamp(transform.rotation, targetRot, ref _rotCv, rotSmooth, Time.deltaTime)
+            );
     }
 }

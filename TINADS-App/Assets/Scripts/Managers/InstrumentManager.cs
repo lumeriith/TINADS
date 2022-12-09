@@ -32,8 +32,10 @@ public enum eInstrumentType : byte
 
 public struct HitInfo
 {
+    public float time;
     public eInstrumentType instrument;
     public Vector3 velocity;
+    public Vector3 point;
     /// <summary>
     /// Scalar velocity between 0 and 1.
     /// </summary>
@@ -166,30 +168,9 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         m_RecordPatternBuilder = new PatternBuilder()
             .SetNoteLength(TIME_SPAN);
         m_RecordNotes = new HitInfo[MAX_NOTES];
-
-        StartCoroutine(TestRoutine());
-
-        IEnumerator TestRoutine()
-        {
-            StartMetronomePlayback();
-            onInstrumentHit += PlayNote;
-            yield return new WaitForSeconds(1f);
-            while (true)
-            {
-                onInstrumentHit?.Invoke(new HitInfo
-                {
-                    instrument = eInstrumentType.Snare,
-                    normalizedVelocity = 0.8f
-                });
-                yield return new WaitForSeconds(0.3f);
-                onInstrumentHit?.Invoke(new HitInfo
-                {
-                    instrument = eInstrumentType.ClosedHiHat,
-                    normalizedVelocity = 0.6f
-                });
-                yield return new WaitForSeconds(0.3f);
-            }
-        }
+        
+        StartMetronomePlayback();
+        onInstrumentHit += PlayNote;
     }
 
     private void OnApplicationQuit()

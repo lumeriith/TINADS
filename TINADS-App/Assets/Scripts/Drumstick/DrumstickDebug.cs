@@ -7,6 +7,8 @@ using UnityEngine;
 public class DrumstickDebug : MonoBehaviour
 {
     public TextMeshProUGUI velocityText;
+    public TextMeshProUGUI filteredText;
+
     
     private Drumstick _drumstick;
 
@@ -17,6 +19,7 @@ public class DrumstickDebug : MonoBehaviour
 
     private void Update()
     {
-        velocityText.text = _drumstick.immediateVelocity.magnitude.ToString("0.0000");
+        velocityText.text = _drumstick.immediateVelocity.magnitude.ToString("0.000");
+        filteredText.text = _drumstick.filteredVelocity.magnitude.ToString("0.000");
     }
 }
