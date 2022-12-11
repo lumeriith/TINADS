@@ -11,6 +11,7 @@ using Melanchall.DryWetMidi.Multimedia;
 using Melanchall.DryWetMidi.MusicTheory;
 using Melanchall.DryWetMidi.Standards;
 using UnityEngine;
+using UnityEngine.XR;
 
 public enum eInstrumentType : byte
 {
@@ -54,18 +55,20 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     private Playback m_MetronomePlayback;
     private readonly MusicalTimeSpan TIME_SPAN = MusicalTimeSpan.ThirtySecond;
     private const int TIME_SPAN_INT = 32 / 4;
+    private bool m_IsMetronomePlaying = false;
 
     private MidiFile[] m_DrumMidiFiles;
     private Playback[] m_DrumPlayback;
-    private bool[] m_DrumPlaybackCheck;
     private MidiFile m_MidiFile;
 
     private TempoMap m_RecordTempoMap = TempoMap.Default;
     private MidiFile m_RecordFile;
     private PatternBuilder m_RecordPatternBuilder;
-    private HitInfo[] m_RecordNotes;
+    private HitInfo[] m_RecordNotesBuffer;
     private static readonly int MAX_NOTES = 4;
     private int m_RecordNotesSize = 0;
+    private bool m_IsRecording = false;
+    private int m_RecordCount = 0;
 
     public Action<HitInfo> onInstrumentHit;
 
@@ -121,18 +124,17 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             case eInstrumentType.RideCymbal2:
             case eInstrumentType.SideStick:
             case eInstrumentType.SplashCymbal:
-                if (m_DrumPlaybackCheck[(int)info.instrument])
-                {
-                    m_DrumPlayback[(int)info.instrument].MoveToStart();
-                }
-                m_DrumPlaybackCheck[(int)info.instrument] = true;
+                m_DrumPlayback[(int)info.instrument].MoveToStart();
                 m_DrumPlayback[(int)info.instrument].Start();
                 break;
         }
 
-        if (m_RecordNotesSize < MAX_NOTES)
+        if (m_IsRecording)
         {
-            m_RecordNotes[m_RecordNotesSize++] = info;
+            if (m_RecordNotesSize < MAX_NOTES)
+            {
+                m_RecordNotesBuffer[m_RecordNotesSize++] = info;
+            }
         }
     }
 
@@ -141,25 +143,18 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         InitializeOutputDevice();
 
         // Initialize metronome
-        m_MetronomeMidiFile = CreateMetronomeFile(m_RecordTempoMap);
-        InitializeMetronomePlayback();
+        CreateMetronomePatternBuilder();
 
         // Initialize drum midi files
         m_DrumMidiFiles = new MidiFile[(int)eInstrumentType.Count];
         m_DrumPlayback = new Playback[(int)eInstrumentType.Count];
-        m_DrumPlaybackCheck = new bool[(int)eInstrumentType.Count];
-        for (int i = 0; i < (int)eInstrumentType.Count; ++i)
-        {
-            m_DrumPlaybackCheck[i] = false;
-        }
-        Debug.Log($"Drum midi files count: {(int)eInstrumentType.Count}");
+
         foreach (eInstrumentType instrumentType in System.Enum.GetValues(typeof(eInstrumentType)))
         {
             if (instrumentType == eInstrumentType.Count)
             {
                 break;
             }
-            Debug.Log($"for each: {(int)instrumentType}/{(int)eInstrumentType.Count}");
             m_DrumMidiFiles[(int)instrumentType] = CreateDrumFile(instrumentType);
             InitializeDrumPlayback(instrumentType);
         }
@@ -167,21 +162,90 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         // Initialize record variables
         m_RecordPatternBuilder = new PatternBuilder()
             .SetNoteLength(TIME_SPAN);
-        m_RecordNotes = new HitInfo[MAX_NOTES];
-        
-        StartMetronomePlayback();
+        m_RecordNotesBuffer = new HitInfo[MAX_NOTES];
+
         onInstrumentHit += PlayNote;
+    }
+
+    private void SetTempo(int tempoByQuarters)
+    {
+        long microsecondsPerQuarterNote = 60000000 / (long)tempoByQuarters;
+        Tempo tempo = new Tempo(microsecondsPerQuarterNote);
+        m_RecordTempoMap = TempoMap.Create(tempo);
+    }
+
+    private void StartMetronome(TempoMap tempoMap)
+    {
+        if (tempoMap != m_RecordTempoMap && m_MetronomePlayback != null)
+        {
+            m_MetronomePlayback.NotesPlaybackStarted -= OnMetronomePlaybackStarted;
+            m_MetronomePlayback.NotesPlaybackFinished -= OnMetronomePlaybackFinished;
+            m_MetronomePlayback.Dispose();
+            m_MetronomeMidiFile = null;
+        }
+
+        if (m_MetronomePlayback == null)
+        {
+            m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(tempoMap, GeneralMidi.PercussionChannel);
+            InitializeMetronomePlayback();
+        }
+
+        m_IsMetronomePlaying = true;
+
+        m_MetronomePlayback.MoveToStart();
+        StartMetronomePlayback();
+    }
+
+    private void StartRecording()
+    {
+        if (m_IsMetronomePlaying)
+        {
+            m_IsRecording = true;
+
+            // Initialize record variables
+            m_RecordPatternBuilder = new PatternBuilder()
+                .SetNoteLength(TIME_SPAN);
+            m_RecordNotesSize = 0;
+        }
+    }
+
+    private void StopMetronome()
+    {
+        m_MetronomePlayback.Stop();
+
+        m_IsMetronomePlaying = false;
+
+        if (m_IsRecording)
+        {
+            StopRecording();
+        }
+    }
+
+    private void StopRecording()
+    {
+        m_IsRecording = false;
+
+        var recordFile = m_RecordPatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
+
+        Debug.Log("Recorded MIDI file created.");
+
+        recordFile.Write($"Record{m_RecordCount}.mid", overwriteFile: true);
+        ++m_RecordCount;
     }
 
     private void OnApplicationQuit()
     {
         Debug.Log("Releasing playback and device...");
 
-        var recordFile = m_RecordPatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
+        if (m_IsRecording)
+        {
+            StopRecording();
+        }
 
-        Debug.Log("Recorded MIDI file created.");
-
-        recordFile.Write("Record.mid", overwriteFile: true);
+        if (m_IsMetronomePlaying)
+        {
+            StopMetronome();
+        }
 
         if (m_Playback != null)
         {
@@ -231,7 +295,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     private MidiFile CreateDrumFile(eInstrumentType instrumentType)
     {
-        Debug.Log("Creating test MIDI file...");
+        Debug.Log("Creating drum MIDI file...");
 
         var patternBuilder = new PatternBuilder()
             .SetNoteLength(MusicalTimeSpan.Eighth)
@@ -245,19 +309,19 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
         var midiFile = patternBuilder.Build().ToFile(TempoMap.Default, GeneralMidi.PercussionChannel);
 
-        Debug.Log("Test MIDI file created.");
+        Debug.Log("Drum MIDI file created.");
 
         midiFile.Write($"Drum_{instrumentType}.mid", overwriteFile: true);
 
         return midiFile;
     }
 
-    private MidiFile CreateMetronomeFile(TempoMap tempo)
+    private PatternBuilder CreateMetronomePatternBuilder()
     {
-        Debug.Log("Creating test MIDI file...");
+        Debug.Log("Creating Metronome pattern builder...");
 
-        MusicalTimeSpan TIME_SPAN = MusicalTimeSpan.ThirtySecond;
-        int TIME_SPAN_INT = 32 / 4;
+        const long TIME_SPAN_INT = 128 / 4;
+        MusicalTimeSpan TIME_SPAN = new MusicalTimeSpan(TIME_SPAN_INT * 4);
 
         m_MetronomePatternBuilder = new PatternBuilder()
             .SetNoteLength(TIME_SPAN);
@@ -298,11 +362,9 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
                 .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.Cabasa)));
         }
 
-        var midiFile = m_MetronomePatternBuilder.Build().ToFile(tempo, GeneralMidi.PercussionChannel);
+        Debug.Log("Test Metronome pattern builder created.");
 
-        Debug.Log("Test MIDI file created.");
-
-        return midiFile;
+        return m_MetronomePatternBuilder;
     }
 
     private MidiFile CreateTestFile()
@@ -365,7 +427,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         m_MetronomePlayback = m_MetronomeMidiFile.GetPlayback(m_OutputDevice);
         m_MetronomePlayback.Loop = true;
         m_MetronomePlayback.NotesPlaybackStarted += OnMetronomePlaybackStarted;
-        m_MetronomePlayback.NotesPlaybackFinished += OnMetronomePlaybackFinished;
+        //m_MetronomePlayback.NotesPlaybackFinished += OnMetronomePlaybackFinished;
 
         Debug.Log("Metronome playback initialized.");
     }
@@ -399,26 +461,26 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     private void OnMetronomePlaybackStarted(object sender, NotesEventArgs e)
     {
-        LogNotes("Metronome started:", e);
+        //LogNotes("Metronome started:", e);
 
-        if (m_RecordNotesSize > 0)
+        if (m_IsRecording)
         {
-            Debug.Log($"Notes in queue1: {m_RecordNotesSize}");
-            m_RecordPatternBuilder.Anchor();
-            for (int i = 0; i < m_RecordNotesSize; ++i)
+            if (m_RecordNotesSize > 0)
             {
-                Debug.Log($"\tNote[{i}]: {m_RecordNotes[i].instrument}");
-                m_RecordPatternBuilder.MoveToLastAnchor()
-                    .SetVelocity((SevenBitNumber)(int)((float)((int)SevenBitNumber.MaxValue) * m_RecordNotes[i].normalizedVelocity))
-                    .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(ConvertInstrumentTypeToGeneralMidiPercussion(m_RecordNotes[i].instrument))));
+                m_RecordPatternBuilder.Anchor();
+                for (int i = 0; i < m_RecordNotesSize; ++i)
+                {
+                    m_RecordPatternBuilder.MoveToLastAnchor()
+                        .SetVelocity((SevenBitNumber)(int)((float)((int)SevenBitNumber.MaxValue) * m_RecordNotesBuffer[i].normalizedVelocity))
+                        .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(ConvertInstrumentTypeToGeneralMidiPercussion(m_RecordNotesBuffer[i].instrument))));
+                }
+                m_RecordNotesSize = 0;
             }
-            m_RecordNotesSize = 0;
-        }
-        else
-        {
-            Debug.Log($"Notes in queue2: {m_RecordNotesSize}");
-            m_RecordPatternBuilder.SetVelocity(SevenBitNumber.MinValue)
-                .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.CrashCymbal1)));
+            else
+            {
+                m_RecordPatternBuilder.SetVelocity(SevenBitNumber.MinValue)
+                    .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.CrashCymbal1)));
+            }
         }
     }
 
