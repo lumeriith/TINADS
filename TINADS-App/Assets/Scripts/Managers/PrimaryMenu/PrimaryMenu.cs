@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class PrimaryMenu : MonoBehaviour
@@ -12,22 +13,30 @@ public class PrimaryMenu : MonoBehaviour
     public float appearScaleSpeed;
     public Transform primaryControllerTransform;
 
+    public float cursorScaleNormal = 1f;
+    public float cursorScaleHover = 0.3f;
+
     public Image cursorImage;
     
     private CanvasGroup _menuCanvasGroup;
     private Vector3 _menuOriginalScale;
     private Camera _main;
+    private GraphicRaycaster _raycaster;
     
     
     private void Start()
     {
         _menuCanvasGroup = menuCanvas.GetComponent<CanvasGroup>();
+        _raycaster = menuCanvas.GetComponent<GraphicRaycaster>();
         _menuCanvasGroup.alpha = 0;
         _menuOriginalScale = menuCanvas.transform.localScale;
         menuCanvas.transform.localScale = Vector3.zero;
         _main = Camera.main;
     }
 
+    private List<RaycastResult> _raycastResults = new List<RaycastResult>(64);
+    private PrimaryMenuButton _currentHover;
+    
     private void Update()
     {
         var isMenuShown = Input.GetButton("XRI_Right_PrimaryButton");
@@ -46,11 +55,57 @@ public class PrimaryMenu : MonoBehaviour
 
         if (isMenuShown)
         {
-            var canvasPlane = new Plane(menuCanvas.transform.forward, menuCanvas.transform.position);
-            var closestPoint = canvasPlane.ClosestPointOnPlane(primaryControllerTransform.position +
-                                            menuCanvas.transform.rotation * appearOffset);
-            cursorImage.transform.position = closestPoint;
+            ProcessCursor();
+            UpdateCursorScale();
         }
-        
+        else if (_currentHover != null)
+        {
+            _currentHover.OnCursorExit();
+            _currentHover.OnCursorClick();
+            _currentHover = null;
+        }
+    }
+
+    private void ProcessCursor()
+    {
+        var canvasPlane = new Plane(menuCanvas.transform.forward, menuCanvas.transform.position);
+        var closestPoint = canvasPlane.ClosestPointOnPlane(primaryControllerTransform.position +
+                                                           menuCanvas.transform.rotation * appearOffset);
+        cursorImage.transform.position = closestPoint;
+
+        _raycastResults.Clear();
+        _raycaster.Raycast(new PointerEventData(EventSystem.current)
+        {
+            pointerId = -1,
+            position = _main.WorldToScreenPoint(closestPoint)
+        }, _raycastResults);
+
+        PrimaryMenuButton newButton = null;
+        foreach (var obj in _raycastResults)
+        {
+            var btn = obj.gameObject.GetComponentInParent<PrimaryMenuButton>();
+            if (btn == null) continue;
+            newButton = btn;
+            break;
+        }
+
+        if (_currentHover != null && newButton != _currentHover)
+        {
+            _currentHover.OnCursorExit();
+        }
+
+        if (newButton != _currentHover && newButton != null)
+        {
+            newButton.OnCursorEnter();
+        }
+            
+        _currentHover = newButton;
+    }
+
+    private float _cursorScaleCv;
+    private void UpdateCursorScale()
+    {
+        cursorImage.transform.localScale = Mathf.SmoothDamp(cursorImage.transform.localScale.x,
+            _currentHover != null ? cursorScaleHover : cursorScaleNormal, ref _cursorScaleCv, 0.1f) * Vector3.one;
     }
 }
