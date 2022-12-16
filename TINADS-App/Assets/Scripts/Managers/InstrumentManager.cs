@@ -38,6 +38,7 @@ public struct HitInfo
     public eInstrumentType instrument;
     public Vector3 velocity;
     public Vector3 point;
+    public Collider collider;
     /// <summary>
     /// Scalar velocity between 0 and 1.
     /// </summary>
@@ -48,6 +49,8 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 {
     private const string OutputDeviceName = "Microsoft GS Wavetable Synth";
 
+    public bool enableImmediateNotePlayback;
+    
     private OutputDevice m_OutputDevice;
     private Playback m_Playback;
 
@@ -175,7 +178,10 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             .SetNoteLength(TIME_SPAN);
         m_RecordNotesBuffer = new HitInfo[MAX_NOTES];
 
-        onInstrumentHit += PlayNote;
+        onInstrumentHit += info =>
+        {
+            if (enableImmediateNotePlayback) PlayNote(info);
+        };
 
         StartMetronome();
         StartRecording();
