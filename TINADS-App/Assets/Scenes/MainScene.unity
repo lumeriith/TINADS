@@ -914,7 +914,7 @@ MonoBehaviour:
   rightStick: {fileID: 1266344844}
   minVelocity: 0.55
   maxVelocity: 3.5
-  minInterval: 0.2
+  minInterval: 0.15
 --- !u!82 &617720032
 AudioSource:
   m_ObjectHideFlags: 0

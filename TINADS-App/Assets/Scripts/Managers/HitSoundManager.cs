@@ -16,6 +16,8 @@ public class HitSoundManager : MonoBehaviour
     public AnimationCurve physToAudioVelocityCurve;
     public GameObject notePlayerPrefab;
 
+    private List<GameObject> _alivePlayers = new List<GameObject>(); 
+
     void Start()
     {
         InstrumentManager.instance.onInstrumentHit += OnInstrumentHit;
@@ -35,6 +37,12 @@ public class HitSoundManager : MonoBehaviour
             var audio = player.GetComponent<AudioSource>();
             audio.clip = mapping.clips[index];
             audio.Play();
+            _alivePlayers.Add(player);
+            if (_alivePlayers.Count > 10)
+            {
+                if (_alivePlayers[0] != null) Destroy(_alivePlayers[0]);
+                _alivePlayers.RemoveAt(0);
+            }
         }
     }
 }
