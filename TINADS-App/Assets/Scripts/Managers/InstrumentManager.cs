@@ -286,13 +286,10 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             }
         }
 
-        if (m_MetronomePlayback == null)
-        {
-            SetTempo(tempoByQuarters);
-            CreateMetronomePatternBuilder();
-            m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
-            InitializeMetronomePlayback();
-        }
+        SetTempo(tempoByQuarters);
+        CreateMetronomePatternBuilder();
+        m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
+        InitializeMetronomePlayback();
 
         m_IsMetronomePlaying = true;
 
