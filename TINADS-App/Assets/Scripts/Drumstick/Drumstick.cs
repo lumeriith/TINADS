@@ -44,4 +44,9 @@ public class Drumstick : MonoBehaviour
             _filterCv = Vector3.zero;
         }
     }
+
+    public Vector3 GetSamplePoint(float prediction)
+    {
+        return velocitySamplePoint.position + filteredVelocity * prediction;
+    }
 }

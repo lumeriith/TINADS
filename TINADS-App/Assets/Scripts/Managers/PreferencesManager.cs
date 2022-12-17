@@ -38,11 +38,23 @@ public class PreferencesManager : SingletonBehaviour<PreferencesManager>
     }
     private float _drumSetScale;
     
+    public float prediction
+    {
+        get => _prediction;
+        set
+        {
+            _prediction = value;
+            PlayerPrefs.SetFloat("Prediction", value);
+        }
+    }
+    private float _prediction;
+    
     private void Awake()
     {
         _drumSetPosition = PlayerPrefsUtil.GetVector3("DrumSetPosition");
         _drumSetRotation = PlayerPrefsUtil.GetQuaternion("DrumSetRotation");
         _drumSetScale = PlayerPrefs.GetFloat("DrumSetScale");
+        _prediction = PlayerPrefs.GetFloat("Prediction");
     }
 
     private void OnDestroy()

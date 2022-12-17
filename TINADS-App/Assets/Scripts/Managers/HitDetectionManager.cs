@@ -12,12 +12,13 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
     public float maxVelocity;
     public float minInterval = 0.2f;
 
+
     private Vector3 _leftStickLastCheckPoint;
     private Vector3 _rightStickLastCheckPoint;
 
     private HitInfo _leftLastHitInfo;
     private HitInfo _rightLastHitInfo;
-    
+
     private void Update()
     {
         DetectHit(leftStick, ref _leftStickLastCheckPoint, ref _leftLastHitInfo);
@@ -28,10 +29,12 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
     private void DetectHit(Drumstick stick, ref Vector3 lastCheckPoint, ref HitInfo lastHit)
     {
         var minVelSqr = minVelocity * minVelocity;
-     
+
+        var samplePoint = stick.GetSamplePoint(SetTimingManager.instance.prediction);
+        
         if (stick.filteredVelocity.sqrMagnitude < minVelSqr || stick.filteredVelocity.y > 0)
         {
-            lastCheckPoint = stick.velocitySamplePoint.position;
+            lastCheckPoint = samplePoint;
             return;
         }
 
@@ -39,7 +42,7 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
             GameManager.instance.currentTool != Tool.SetTempo &&
             GameManager.instance.currentTool != Tool.SetTiming)
         {
-            lastCheckPoint = stick.velocitySamplePoint.position;
+            lastCheckPoint = samplePoint;
             return;
         }
 
@@ -47,7 +50,7 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
         
         
         var normalized = Mathf.Clamp((stick.filteredVelocity.magnitude - minVelocity) / (maxVelocity - minVelocity), 0, 1);
-        var dir = stick.velocitySamplePoint.position - lastCheckPoint;
+        var dir = samplePoint - lastCheckPoint;
         if (dir.sqrMagnitude < 0.001f) return;
         var count = Physics.RaycastNonAlloc(lastCheckPoint, dir, _hitBuffer, dir.magnitude);
         for (int i = 0; i < count; i++)
@@ -73,6 +76,6 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
             }
         }
 
-        lastCheckPoint = stick.velocitySamplePoint.position;
+        lastCheckPoint = samplePoint;
     }
 }
