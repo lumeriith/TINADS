@@ -914,7 +914,7 @@ MonoBehaviour:
   rightStick: {fileID: 1266344844}
   minVelocity: 0.55
   maxVelocity: 3.5
-  minInterval: 0.2
+  minInterval: 0.15
 --- !u!82 &617720032
 AudioSource:
   m_ObjectHideFlags: 0
@@ -7552,7 +7552,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c913109fc0c33e4489e69eda2a05056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 8
+  type: 12
 --- !u!1 &5385301718133046246
 GameObject:
   m_ObjectHideFlags: 0
