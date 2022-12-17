@@ -61,6 +61,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     private const int TIME_SPAN_INT = 128 / 4;
     private readonly MusicalTimeSpan TIME_SPAN = new MusicalTimeSpan(TIME_SPAN_INT * 4);
     private bool m_IsMetronomePlaying = false;
+    private MidiTimeSpan m_CurrentMetronomeTime;
 
     private string m_BackgroundMidiFilePath;
     private MidiFile m_BackgroundMidiFile;
@@ -131,6 +132,24 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     public double GetCurrentRecordingDurationBySeconds()
     {
         return (DateTime.Now - m_RecordingStarted).TotalSeconds;
+    }
+
+    public long GetCurrentBpm()
+    {
+        if (m_IsCalculatingBpm)
+        {
+            if (m_BpmCounter > 0)
+            {
+                return 60000000 / (long)(((m_BpmSumByMilliseconds / (double)m_BpmCounter) * 1000.0) + 0.5);
+            }
+
+        }
+        else if (m_CurrentMetronomeTime != null)
+        {
+            return (long) (m_RecordTempoMap.GetTempoAtTime(m_CurrentMetronomeTime).BeatsPerMinute + 0.5);
+        }
+
+        return 0;
     }
 
     public bool InitializeBackground(string midiFilePath)
@@ -207,6 +226,9 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             InitializeMetronomePlayback();
         }
 
+        PlaybackCurrentTimeWatcher.Instance.AddPlayback(m_MetronomePlayback, TimeSpanType.Midi);
+        PlaybackCurrentTimeWatcher.Instance.CurrentTimeChanged += OnCurrentTimeChanged;
+
         m_IsMetronomePlaying = true;
         m_MetronomePlayback.Loop = true;
         m_MetronomePlayback.MoveToStart();
@@ -215,6 +237,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         m_BackgroundPlayback.MoveToStart();
 
         StartRecording();
+        PlaybackCurrentTimeWatcher.Instance.Start();
         StartMetronomePlayback();
         StartBackgroundPlayback();
     }
@@ -247,6 +270,10 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         m_IsMetronomePlaying = true;
+
+        PlaybackCurrentTimeWatcher.Instance.AddPlayback(m_MetronomePlayback, TimeSpanType.Midi);
+        PlaybackCurrentTimeWatcher.Instance.CurrentTimeChanged += OnCurrentTimeChanged;
+        PlaybackCurrentTimeWatcher.Instance.Start();
 
         StartMetronomePlayback();
     }
@@ -292,7 +319,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
         Tempo tempo = new Tempo((long) (((m_BpmSumByMilliseconds / (double) m_BpmCounter) * 1000.0) + 0.5));
 
-        Debug.Log($"Tempo set to {60000.0 / (m_BpmSumByMilliseconds / (double)m_BpmCounter)}");
+        Debug.Log($"Tempo set to {60000000 / (long)(((m_BpmSumByMilliseconds / (double)m_BpmCounter) * 1000.0) + 0.5)}");
         m_RecordTempoMap = TempoMap.Create(tempo);
     }
 
@@ -384,7 +411,6 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             .SetNoteLength(TIME_SPAN);
         m_RecordNotesBuffer = new HitInfo[MAX_NOTES];
 
-        StartBpmCounter();
         onInstrumentHit += info =>
         {
             if (enableImmediateNotePlayback) PlayNote(info);
@@ -607,6 +633,15 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
                 m_RecordPatternBuilder.SetVelocity(SevenBitNumber.MinValue)
                     .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.CrashCymbal1)));
             }
+        }
+    }
+
+    private void OnCurrentTimeChanged(object sender, PlaybackCurrentTimeChangedEventArgs e)
+    {
+        foreach (var playbackTime in e.Times)
+        {
+            var playback = playbackTime.Playback;
+            m_CurrentMetronomeTime = (MidiTimeSpan)playbackTime.Time;
         }
     }
 
