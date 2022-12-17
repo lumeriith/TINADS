@@ -1200,7 +1200,7 @@ PrefabInstance:
     - target: {fileID: 3074247063859369937, guid: a93e799cea4051941942452621479243,
         type: 3}
       propertyPath: onClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: SetToolSetTempo
+      value: SetToolDrumStick
       objectReference: {fileID: 0}
     - target: {fileID: 3074247063859369937, guid: a93e799cea4051941942452621479243,
         type: 3}
