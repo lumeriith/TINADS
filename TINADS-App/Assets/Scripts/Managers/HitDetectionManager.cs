@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
 {
+    public bool enableTestSound;
     public Drumstick leftStick;
     public Drumstick rightStick;
     public float minVelocity;
@@ -37,23 +38,28 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
         
         var normalized = Mathf.Clamp((stick.filteredVelocity.magnitude - minVelocity) / (maxVelocity - minVelocity), 0, 1);
         var dir = stick.velocitySamplePoint.position - lastCheckPoint;
+        if (dir.sqrMagnitude < 0.001f) return;
         var count = Physics.RaycastNonAlloc(lastCheckPoint, dir, _hitBuffer, dir.magnitude);
         for (int i = 0; i < count; i++)
         {
             if (_hitBuffer[i].collider.TryGetComponent<Instrument>(out var instrument))
             {
-                if (lastHit.instrument == instrument.type && Time.time - lastHit.time < minInterval) return;
-                Debug.Log($"Hit {instrument.type} with {normalized} strength");
+                var insType = instrument.GetInstrumentType(_hitBuffer[i].point);
+                if (lastHit.collider == _hitBuffer[i].collider && Time.time - lastHit.time < minInterval) return;
+                Debug.Log($"Hit {insType} with {normalized} strength");
                 var info = new HitInfo
                 {
                     time = Time.time,
-                    instrument = instrument.type,
+                    instrument = insType,
                     velocity = stick.filteredVelocity,
                     normalizedVelocity = normalized,
-                    point = _hitBuffer[i].point
+                    point = _hitBuffer[i].point,
+                    collider = _hitBuffer[i].collider
                 };
                 InstrumentManager.instance.onInstrumentHit?.Invoke(info);
                 lastHit = info;
+
+                if (enableTestSound) GetComponent<AudioSource>().Play();
             }
         }
 
