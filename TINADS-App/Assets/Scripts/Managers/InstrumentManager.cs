@@ -87,8 +87,12 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     private double m_BpmSumByMilliseconds = 0.0;
     private int m_BpmCounter = 0;
 
+    private int m_BeatCounter = 0;
+    private bool m_ShouldInvokeBeatCallback = false;
+
     public Action<HitInfo> onInstrumentHit;
     public Action<bool> onIsRecordingChanged;
+    public Action onMetronomeBeat;
 
     public static GeneralMidiPercussion ConvertInstrumentTypeToGeneralMidiPercussion(eInstrumentType instrumentType)
     {
@@ -123,6 +127,15 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         return GeneralMidiPercussion.Cowbell;
+    }
+
+    private void Update()
+    {
+        if (m_ShouldInvokeBeatCallback)
+        {
+            onMetronomeBeat?.Invoke();
+            m_ShouldInvokeBeatCallback = false;
+        }
     }
 
     public bool IsRecording()
@@ -286,6 +299,8 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             }
         }
 
+        m_BeatCounter = 0;
+        
         SetTempo(tempoByQuarters);
         CreateMetronomePatternBuilder();
         m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
@@ -641,6 +656,13 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     private void OnMetronomePlaybackStarted(object sender, NotesEventArgs e)
     {
+        if (m_BeatCounter == 0)
+            m_ShouldInvokeBeatCallback = true;
+
+        m_BeatCounter++;
+        if (m_BeatCounter == TIME_SPAN_INT) 
+            m_BeatCounter = 0;
+        
         if (m_IsRecording)
         {
             if (m_RecordNotesSize > 0)
