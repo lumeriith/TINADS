@@ -302,18 +302,20 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     public void StartRecording()
     {
-        if (m_IsMetronomePlaying || m_IsBackgroundPlaying)
+        if (!m_IsMetronomePlaying && !m_IsBackgroundPlaying)
         {
-            m_IsRecording = true;
-            onIsRecordingChanged?.Invoke(true);
-
-            // Initialize record variables
-            m_RecordPatternBuilder = new PatternBuilder()
-                .SetNoteLength(TIME_SPAN);
-            m_RecordNotesSize = 0;
-
-            m_RecordingStarted = DateTime.Now;
+            StartMetronome((int)GetCurrentBpm());
         }
+        
+        m_IsRecording = true;
+        onIsRecordingChanged?.Invoke(true);
+
+        // Initialize record variables
+        m_RecordPatternBuilder = new PatternBuilder()
+            .SetNoteLength(TIME_SPAN);
+        m_RecordNotesSize = 0;
+
+        m_RecordingStarted = DateTime.Now;
     }
 
     public void StopBackground()
@@ -395,14 +397,6 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
                 m_DrumPlayback[(int)info.instrument].Start();
                 break;
         }
-
-        if (m_IsRecording)
-        {
-            if (m_RecordNotesSize < MAX_NOTES)
-            {
-                m_RecordNotesBuffer[m_RecordNotesSize++] = info;
-            }
-        }
     }
 
     private void Start()
@@ -438,6 +432,14 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         onInstrumentHit += info =>
         {
             if (enableImmediateNotePlayback) PlayNote(info);
+            
+            if (m_IsRecording)
+            {
+                if (m_RecordNotesSize < MAX_NOTES)
+                {
+                    m_RecordNotesBuffer[m_RecordNotesSize++] = info;
+                }
+            }
 
             if (m_HasBpmCounterStarted)
             {
