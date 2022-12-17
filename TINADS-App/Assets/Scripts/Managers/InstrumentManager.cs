@@ -130,6 +130,16 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         return m_IsRecording;
     }
 
+    public bool IsMetronomePlaying()
+    {
+        return m_IsMetronomePlaying;
+    }
+
+    public bool IsCalculatingBpm()
+    {
+        return m_IsCalculatingBpm;
+    }
+
     public double GetCurrentRecordingDurationBySeconds()
     {
         return (DateTime.Now - m_RecordingStarted).TotalSeconds;

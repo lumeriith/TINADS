@@ -42,6 +42,8 @@ public class HitDetectionManager : SingletonBehaviour<HitDetectionManager>
             lastCheckPoint = stick.velocitySamplePoint.position;
             return;
         }
+
+        if (GameManager.instance.currentTool == Tool.SetTempo && stick == leftStick) return;
         
         
         var normalized = Mathf.Clamp((stick.filteredVelocity.magnitude - minVelocity) / (maxVelocity - minVelocity), 0, 1);
