@@ -185,6 +185,12 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     public void SetTempo(int tempoByQuarters)
     {
+        if (tempoByQuarters <= 0)
+        {
+            Debug.Log($"[MIDI] Invalid tempo of {tempoByQuarters}!!");
+            return;
+        }
+
         long microsecondsPerQuarterNote = 60000000 / (long)tempoByQuarters;
         Tempo tempo = new Tempo(microsecondsPerQuarterNote);
         m_RecordTempoMap = TempoMap.Create(tempo);
@@ -226,6 +232,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
         if (m_MetronomeMidiFile == null || m_MetronomePlayback == null)
         {
+            CreateMetronomePatternBuilder();
             m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(TempoMap.Default, GeneralMidi.PercussionChannel);
             MidiTimeSpan metronomeTimeSpan = Melanchall.DryWetMidi.Interaction.MidiFileUtilities.GetDuration<MidiTimeSpan>(m_MetronomeMidiFile);
             MidiTimeSpan backgroundTimeSpan = Melanchall.DryWetMidi.Interaction.MidiFileUtilities.GetDuration<MidiTimeSpan>(m_BackgroundMidiFile);
@@ -255,6 +262,11 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     public void StartBpmCounter()
     {
+        if (m_IsMetronomePlaying)
+        {
+            StopMetronome();
+        }
+
         m_IsCalculatingBpm = true;
         m_HasBpmCounterStarted = false;
     }
@@ -264,18 +276,20 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         if (m_IsMetronomePlaying)
         {
             StopMetronome();
-        }
 
-        if (m_MetronomePlayback != null)
-        {
-            m_MetronomePlayback.NotesPlaybackStarted -= OnMetronomePlaybackStarted;
-            m_MetronomePlayback.Dispose();
-            m_MetronomeMidiFile = null;
+            if (m_MetronomePlayback != null)
+            {
+                m_MetronomePlayback.NotesPlaybackStarted -= OnMetronomePlaybackStarted;
+                m_MetronomePlayback.Dispose();
+                m_MetronomeMidiFile = null;
+                m_MetronomePlayback = null;
+            }
         }
 
         if (m_MetronomePlayback == null)
         {
-            //SetTempo(tempoByQuarters);
+            SetTempo(tempoByQuarters);
+            CreateMetronomePatternBuilder();
             m_MetronomeMidiFile = m_MetronomePatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
             InitializeMetronomePlayback();
         }
