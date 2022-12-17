@@ -89,10 +89,11 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
 
     private int m_BeatCounter = 0;
     private bool m_ShouldInvokeBeatCallback = false;
-
+    private int m_NextBeatCallback = 0;
+    
     public Action<HitInfo> onInstrumentHit;
     public Action<bool> onIsRecordingChanged;
-    public Action onMetronomeBeat;
+    public Action<int> onMetronomeBeat;
 
     public static GeneralMidiPercussion ConvertInstrumentTypeToGeneralMidiPercussion(eInstrumentType instrumentType)
     {
@@ -133,7 +134,9 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     {
         if (m_ShouldInvokeBeatCallback)
         {
-            onMetronomeBeat?.Invoke();
+            onMetronomeBeat?.Invoke(m_NextBeatCallback);
+            m_NextBeatCallback++;
+            if (m_NextBeatCallback == 4) m_NextBeatCallback = 0;
             m_ShouldInvokeBeatCallback = false;
         }
     }
@@ -300,6 +303,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         m_BeatCounter = 0;
+        m_NextBeatCallback = 0;
         
         SetTempo(tempoByQuarters);
         CreateMetronomePatternBuilder();
