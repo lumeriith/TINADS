@@ -5,7 +5,7 @@ using UnityEngine;
 
 public enum Tool
 {
-    DrumStick, MoveDrumSet, SetTempo
+    DrumStick, MoveDrumSet, SetTempo, SetTiming
 }
 
 public class GameManager : SingletonBehaviour<GameManager>
@@ -20,4 +20,9 @@ public class GameManager : SingletonBehaviour<GameManager>
         currentTool = tool;
         onToolChanged?.Invoke(tool);
     }
+
+    public void SetToolDrumStick() => SetTool(Tool.DrumStick);
+    public void SetToolMoveDrumSet() => SetTool(Tool.MoveDrumSet);
+    public void SetToolSetTempo() => SetTool(Tool.SetTempo);
+    public void SetToolSetTiming() => SetTool(Tool.SetTiming);
 }

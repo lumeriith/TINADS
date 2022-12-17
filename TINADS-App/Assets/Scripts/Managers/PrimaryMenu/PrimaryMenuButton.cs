@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PrimaryMenuButton : MonoBehaviour
 {
@@ -11,6 +12,8 @@ public class PrimaryMenuButton : MonoBehaviour
     public Transform hoverCircle;
     public TextMeshProUGUI nameText;
     public Color hoverTextColor;
+
+    public UnityEvent onClick;
 
     private Color _textDefaultColor;
     private float _cv;
@@ -34,7 +37,7 @@ public class PrimaryMenuButton : MonoBehaviour
 
     public virtual void OnCursorClick()
     {
-        
+        onClick?.Invoke();
     }
 
     private void Update()

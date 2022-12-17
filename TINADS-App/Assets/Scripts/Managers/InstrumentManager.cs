@@ -88,6 +88,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     private int m_BpmCounter = 0;
 
     public Action<HitInfo> onInstrumentHit;
+    public Action<bool> onIsRecordingChanged;
 
     public static GeneralMidiPercussion ConvertInstrumentTypeToGeneralMidiPercussion(eInstrumentType instrumentType)
     {
@@ -283,6 +284,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         if (m_IsMetronomePlaying || m_IsBackgroundPlaying)
         {
             m_IsRecording = true;
+            onIsRecordingChanged?.Invoke(true);
 
             // Initialize record variables
             m_RecordPatternBuilder = new PatternBuilder()
@@ -340,6 +342,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     public void StopRecording()
     {
         m_IsRecording = false;
+        onIsRecordingChanged?.Invoke(false);
 
         var recordFile = m_RecordPatternBuilder.Build().ToFile(m_RecordTempoMap, GeneralMidi.PercussionChannel);
 
