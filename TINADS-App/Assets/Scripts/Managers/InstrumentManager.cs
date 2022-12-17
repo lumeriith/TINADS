@@ -80,6 +80,12 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
     private bool m_IsRecording = false;
     private DateTime m_RecordingStarted;
 
+    private bool m_IsCalculatingBpm = false;
+    private bool m_HasBpmCounterStarted = false;
+    private DateTime m_LastBpmDateTime;
+    private double m_BpmSumByMilliseconds = 0.0;
+    private int m_BpmCounter = 0;
+
     public Action<HitInfo> onInstrumentHit;
 
     public static GeneralMidiPercussion ConvertInstrumentTypeToGeneralMidiPercussion(eInstrumentType instrumentType)
@@ -213,6 +219,12 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         StartBackgroundPlayback();
     }
 
+    public void StartBpmCounter()
+    {
+        m_IsCalculatingBpm = true;
+        m_HasBpmCounterStarted = false;
+    }
+
     public void StartMetronome(int tempoByQuarters)
     {
         if (m_IsMetronomePlaying)
@@ -271,6 +283,17 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         Debug.Log("[MIDI] Background stopped.");
+    }
+
+    public void StopBpmCounter()
+    {
+        m_IsCalculatingBpm = false;
+        m_HasBpmCounterStarted = false;
+
+        Tempo tempo = new Tempo((long) (((m_BpmSumByMilliseconds / (double) m_BpmCounter) * 1000.0) + 0.5));
+
+        Debug.Log($"Tempo set to {60000.0 / (m_BpmSumByMilliseconds / (double)m_BpmCounter)}");
+        m_RecordTempoMap = TempoMap.Create(tempo);
     }
 
     public void StopMetronome()
@@ -361,15 +384,36 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             .SetNoteLength(TIME_SPAN);
         m_RecordNotesBuffer = new HitInfo[MAX_NOTES];
 
+        StartBpmCounter();
         onInstrumentHit += info =>
         {
             if (enableImmediateNotePlayback) PlayNote(info);
+
+            if (m_HasBpmCounterStarted)
+            {
+                DateTime now = DateTime.Now;
+                m_BpmSumByMilliseconds += (now - m_LastBpmDateTime).TotalMilliseconds;
+                m_LastBpmDateTime = now;
+                ++m_BpmCounter;
+            }
+            else if (m_IsCalculatingBpm)
+            {
+                m_HasBpmCounterStarted = true;
+                m_BpmSumByMilliseconds = 0.0f;
+                m_BpmCounter = 0;
+                m_LastBpmDateTime = DateTime.Now;
+            }
         };
     }
 
     private void OnApplicationQuit()
     {
         Debug.Log("[MIDI] Releasing playback and device...");
+
+        if (m_IsCalculatingBpm)
+        {
+            StopBpmCounter();
+        }
 
         if (m_IsBackgroundPlaying)
         {
