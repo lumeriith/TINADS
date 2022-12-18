@@ -19,8 +19,10 @@ public class HUDCanvas : MonoBehaviour
 
     private void Update()
     {
+        var rot = _main.transform.rotation.eulerAngles;
+
         transform.position = Vector3.SmoothDamp(transform.position, _main.transform.position + _main.transform.forward * desiredDistance, ref _posCv, smoothTime);
-        transform.rotation = QuaternionUtil.SmoothDamp(transform.rotation, _main.transform.rotation, ref _rotCv,
+        transform.rotation = QuaternionUtil.SmoothDamp(transform.rotation, Quaternion.Euler(rot.x, rot.y, 0), ref _rotCv,
             smoothTime, Time.deltaTime);
     }
 }

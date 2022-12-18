@@ -17,7 +17,13 @@ public class PrimaryMenu : MonoBehaviour
     public float cursorScaleHover = 0.3f;
 
     public Image cursorImage;
-    
+
+    public Effect hoverEffect;
+    public Effect clickEffect;
+    public Effect openMenuEffect;
+    public Effect closeMenuEffect;
+
+
     private CanvasGroup _menuCanvasGroup;
     private Vector3 _menuOriginalScale;
     private Camera _main;
@@ -51,6 +57,12 @@ public class PrimaryMenu : MonoBehaviour
             delta.y = 0;
             var rot = Quaternion.LookRotation(delta);
             menuCanvas.transform.SetPositionAndRotation(primaryControllerTransform.position + rot * appearOffset, rot);
+            openMenuEffect.PlayNew();
+        }
+        
+        if (Input.GetButtonUp("XRI_Right_PrimaryButton"))
+        {
+            closeMenuEffect.PlayNew();
         }
 
         if (isMenuShown)
@@ -62,6 +74,7 @@ public class PrimaryMenu : MonoBehaviour
         {
             _currentHover.OnCursorExit();
             _currentHover.OnCursorClick();
+            clickEffect.PlayNew();
             _currentHover = null;
         }
     }
@@ -97,6 +110,7 @@ public class PrimaryMenu : MonoBehaviour
         if (newButton != _currentHover && newButton != null)
         {
             newButton.OnCursorEnter();
+            hoverEffect.PlayNew();
         }
             
         _currentHover = newButton;
