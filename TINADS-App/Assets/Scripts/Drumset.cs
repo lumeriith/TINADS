@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Drumset : MonoBehaviour
+public class Drumset : SingletonBehaviour<Drumset>
 {
     public float movementSpeed = 5f;
     public float rotationSpeed = 30f;

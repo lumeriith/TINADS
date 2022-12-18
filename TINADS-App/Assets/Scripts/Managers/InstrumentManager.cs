@@ -573,7 +573,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
             .SetNoteLength(TIME_SPAN);
 
         // first beat
-        m_MetronomePatternBuilder.SetVelocity(SevenBitNumber.MaxValue)
+        m_MetronomePatternBuilder.SetVelocity(SevenBitNumber.MinValue)
             .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.BassDrum1)));
         for (int i = 0; i < TIME_SPAN_INT - 1; ++i)
         {
@@ -582,7 +582,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         // second beat
-        m_MetronomePatternBuilder.SetVelocity((SevenBitNumber)101)
+        m_MetronomePatternBuilder.SetVelocity(SevenBitNumber.MinValue)
             .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.BassDrum1)));
         for (int i = 0; i < TIME_SPAN_INT - 1; ++i)
         {
@@ -591,7 +591,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         // third beat
-        m_MetronomePatternBuilder.SetVelocity((SevenBitNumber)75)
+        m_MetronomePatternBuilder.SetVelocity(SevenBitNumber.MinValue)
             .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.BassDrum1)));
         for (int i = 0; i < TIME_SPAN_INT - 1; ++i)
         {
@@ -600,7 +600,7 @@ public class InstrumentManager : SingletonBehaviour<InstrumentManager>
         }
 
         // fourth beat
-        m_MetronomePatternBuilder.SetVelocity((SevenBitNumber)75)
+        m_MetronomePatternBuilder.SetVelocity(SevenBitNumber.MinValue)
             .Note(Melanchall.DryWetMidi.MusicTheory.Note.Get(GeneralMidiUtilities.AsSevenBitNumber(GeneralMidiPercussion.BassDrum1)));
         for (int i = 0; i < TIME_SPAN_INT - 1; ++i)
         {
